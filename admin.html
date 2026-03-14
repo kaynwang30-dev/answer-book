@@ -186,13 +186,32 @@
                 return;
             }
 
-            // 验证 token 是否有效
-            errorEl.textContent = '正在验证 Token...';
+            // 验证 token 是否有效（测试写入权限，而非仅读取）
+            errorEl.textContent = '正在验证 Token 权限...';
             GitHubStore.setToken(token);
 
             try {
+                // 先测试读取
                 const { codes } = await GitHubStore.fetchCodes();
-                // Token 有效，保存到 session
+
+                // 再测试写入权限：使用 GitHub API 检查 token 的 scope
+                const scopeResp = await fetch('https://api.github.com/repos/kaynwang30-dev/answer-book', {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'User-Agent': 'AnswerBook',
+                    }
+                });
+                if (!scopeResp.ok) {
+                    throw new Error(`Token 无效或无仓库访问权限 (${scopeResp.status})`);
+                }
+                // 检查权限：通过查看 push 权限
+                const repoInfo = await scopeResp.json();
+                if (!repoInfo.permissions || !repoInfo.permissions.push) {
+                    throw new Error('Token 缺少写入权限，请确保勾选了 repo 或 contents:write 权限');
+                }
+
+                // Token 有效且有写入权限，保存到 session
                 sessionStorage.setItem('admin_gh_token', token);
                 errorEl.textContent = '';
                 showPanel();
