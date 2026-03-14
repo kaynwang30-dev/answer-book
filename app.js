@@ -86,8 +86,8 @@ function initCodeInputs() {
     });
 }
 
-// ============ 邀请码验证 ============
-function verifyInviteCode() {
+// ============ 邀请码验证（异步，通过 GitHub API） ============
+async function verifyInviteCode() {
     const code1 = document.getElementById('code1').value;
     const code2 = document.getElementById('code2').value;
     const code3 = document.getElementById('code3').value;
@@ -103,10 +103,12 @@ function verifyInviteCode() {
 
     btn.classList.add('loading');
     btn.disabled = true;
+    errorEl.textContent = '';
+    errorEl.classList.remove('visible');
 
-    // 模拟验证延迟
-    setTimeout(() => {
-        const result = InviteCodeManager.verify(fullCode);
+    try {
+        const result = await InviteCodeManager.verify(fullCode);
+
         btn.classList.remove('loading');
         btn.disabled = false;
 
@@ -120,7 +122,14 @@ function verifyInviteCode() {
             errorEl.classList.add('visible');
             shakeElement(document.querySelector('.code-inputs'));
         }
-    }, 800);
+    } catch (err) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        errorEl.textContent = '验证失败，请检查网络后重试';
+        errorEl.classList.add('visible');
+        shakeElement(document.querySelector('.code-inputs'));
+        console.error('[VerifyCode] Error:', err);
+    }
 }
 
 // ============ 维度选择网格 ============
