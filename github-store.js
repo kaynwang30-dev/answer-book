@@ -53,7 +53,11 @@ const GitHubStore = {
 
             const data = await resp.json();
             const content = atob(data.content.replace(/\n/g, ''));
-            const codes = JSON.parse(content);
+            const parsed = JSON.parse(content);
+
+            // codes.json 结构为 { codes: [...], version, lastUpdated }
+            // 兼容两种格式：数组 或 包装对象
+            const codes = Array.isArray(parsed) ? parsed : (parsed.codes || []);
 
             // 更新缓存
             this._cache = codes;
@@ -77,7 +81,13 @@ const GitHubStore = {
         const { owner, repo, filePath, branch, token } = this.CONFIG;
         const url = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
 
-        const content = btoa(unescape(encodeURIComponent(JSON.stringify(codes, null, 2))));
+        // 保持 { codes, version, lastUpdated } 包装结构
+        const wrapped = {
+            codes: codes,
+            version: 1,
+            lastUpdated: new Date().toISOString()
+        };
+        const content = btoa(unescape(encodeURIComponent(JSON.stringify(wrapped, null, 2))));
 
         const body = {
             message: commitMessage || `Update codes.json - ${new Date().toISOString()}`,
