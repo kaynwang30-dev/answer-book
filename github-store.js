@@ -115,6 +115,12 @@ const GitHubStore = {
             if (resp.status === 409 || resp.status === 422) {
                 throw new Error('CONFLICT: 数据已被其他人修改，请刷新后重试');
             }
+            if (resp.status === 401) {
+                throw new Error('Token 已失效或无权限，请退出并重新登录（需要重新生成有效 Token）');
+            }
+            if (resp.status === 403) {
+                throw new Error('Token 权限不足，请确保 Token 有 repo 或 contents:write 权限');
+            }
             throw new Error(`写入失败: ${resp.status} - ${errData.message || ''}`);
         }
 
