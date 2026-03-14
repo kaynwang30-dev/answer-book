@@ -14,10 +14,19 @@
             <div class="admin-login-card">
                 <div class="admin-logo">✦</div>
                 <h1>答案之书 · 管理后台</h1>
-                <p>请输入管理员密码</p>
-                <div class="admin-input-group">
-                    <input type="password" id="adminPassword" placeholder="管理员密码" onkeydown="if(event.key==='Enter')adminLogin()">
-                    <button onclick="adminLogin()">进入</button>
+                <p>请输入管理员密码和 GitHub Token</p>
+                <div class="admin-input-stack">
+                    <div class="admin-input-group">
+                        <input type="password" id="adminPassword" placeholder="管理员密码" onkeydown="if(event.key==='Enter')document.getElementById('adminToken').focus()">
+                    </div>
+                    <div class="admin-input-group">
+                        <input type="password" id="adminToken" placeholder="GitHub Token（用于读写邀请码数据）" onkeydown="if(event.key==='Enter')adminLogin()">
+                    </div>
+                    <button class="btn-login-full" onclick="adminLogin()">进入管理后台</button>
+                    <div class="token-hint">
+                        <p>💡 Token 需要仓库的 <code>contents:write</code> 权限</p>
+                        <p>Token 仅在当前会话中使用，关闭页面后自动清除</p>
+                    </div>
                 </div>
                 <p class="admin-error" id="adminError"></p>
             </div>
@@ -29,29 +38,40 @@
                 <div class="admin-header-left">
                     <span class="admin-header-icon">✦</span>
                     <h1>邀请码管理</h1>
+                    <span class="sync-badge" id="syncBadge" title="数据来源">☁️ GitHub</span>
                 </div>
                 <div class="admin-header-right">
+                    <button class="btn-refresh" onclick="refreshData()" title="刷新数据">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+                        刷新
+                    </button>
                     <a href="index.html" class="admin-link">前往答案之书</a>
                     <button class="btn-logout" onclick="adminLogout()">退出登录</button>
                 </div>
             </header>
 
+            <!-- Loading 遮罩 -->
+            <div class="admin-loading" id="adminLoading" style="display:none">
+                <div class="loading-spinner"></div>
+                <p id="loadingMessage">加载中...</p>
+            </div>
+
             <!-- 统计卡片 -->
             <div class="stats-grid">
                 <div class="stat-card total">
-                    <div class="stat-number" id="statTotal">0</div>
+                    <div class="stat-number" id="statTotal">-</div>
                     <div class="stat-label">总数</div>
                 </div>
                 <div class="stat-card unused">
-                    <div class="stat-number" id="statUnused">0</div>
+                    <div class="stat-number" id="statUnused">-</div>
                     <div class="stat-label">未使用</div>
                 </div>
                 <div class="stat-card used">
-                    <div class="stat-number" id="statUsed">0</div>
+                    <div class="stat-number" id="statUsed">-</div>
                     <div class="stat-label">已使用</div>
                 </div>
                 <div class="stat-card disabled">
-                    <div class="stat-number" id="statDisabled">0</div>
+                    <div class="stat-number" id="statDisabled">-</div>
                     <div class="stat-label">已禁用</div>
                 </div>
             </div>
@@ -59,7 +79,7 @@
             <!-- 操作栏 -->
             <div class="actions-bar">
                 <div class="actions-left">
-                    <button class="btn-generate" onclick="generateNewCodes()">
+                    <button class="btn-generate" onclick="generateNewCodes()" id="btnGenerate">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                         生成邀请码
                     </button>
@@ -69,6 +89,9 @@
                         <option value="10">10个</option>
                         <option value="20">20个</option>
                     </select>
+                    <button class="btn-init-codes" onclick="initPresetCodes()" id="btnInit" title="将预置的20个邀请码初始化到仓库（仅首次使用）">
+                        🔧 初始化预置码
+                    </button>
                 </div>
                 <div class="actions-right">
                     <div class="filter-group">
@@ -90,6 +113,7 @@
                             <th>状态</th>
                             <th>创建时间</th>
                             <th>使用时间</th>
+                            <th>设备</th>
                             <th>操作</th>
                         </tr>
                     </thead>
@@ -98,7 +122,22 @@
                 </table>
                 <div class="empty-state" id="emptyState" style="display:none">
                     <p>暂无邀请码数据</p>
+                    <p class="empty-hint">点击"🔧 初始化预置码"导入预置的20个邀请码，或点击"生成邀请码"创建新的</p>
                 </div>
+            </div>
+
+            <!-- 批量操作区 -->
+            <div class="batch-actions" id="batchActions">
+                <div class="batch-info">
+                    <span class="batch-icon">📋</span>
+                    <span>快捷操作</span>
+                </div>
+                <button class="btn-batch" onclick="exportCodes()">
+                    📥 导出未使用码
+                </button>
+                <button class="btn-batch" onclick="copyAllUnused()">
+                    📋 复制所有未使用码
+                </button>
             </div>
         </div>
     </div>
@@ -106,55 +145,122 @@
     <!-- Toast -->
     <div class="toast-container" id="toastContainer"></div>
 
+    <script src="github-store.js"></script>
     <script src="invite-code.js"></script>
     <script>
         let currentFilter = 'all';
+        let allCodesCache = [];  // 本地缓存，减少重复请求
 
-        // 初始化
+        // ============ 初始化 ============
         document.addEventListener('DOMContentLoaded', () => {
             InviteCodeManager.init();
+            // 检查是否已有保存的 session
             if (InviteCodeManager.isAdminAuthed()) {
-                showPanel();
+                const savedToken = sessionStorage.getItem('admin_gh_token');
+                if (savedToken) {
+                    GitHubStore.setToken(savedToken);
+                    showPanel();
+                }
             }
         });
 
-        function adminLogin() {
+        // ============ 登录 ============
+        async function adminLogin() {
             const pwd = document.getElementById('adminPassword').value;
-            if (InviteCodeManager.verifyAdmin(pwd)) {
-                showPanel();
-            } else {
-                document.getElementById('adminError').textContent = '密码错误';
+            const token = document.getElementById('adminToken').value.trim();
+            const errorEl = document.getElementById('adminError');
+
+            if (!pwd) {
+                errorEl.textContent = '请输入管理员密码';
+                return;
+            }
+            if (!token) {
+                errorEl.textContent = '请输入 GitHub Token';
+                return;
+            }
+
+            if (!InviteCodeManager.verifyAdmin(pwd)) {
+                errorEl.textContent = '密码错误';
                 document.getElementById('adminPassword').classList.add('shake');
                 setTimeout(() => document.getElementById('adminPassword').classList.remove('shake'), 500);
+                return;
+            }
+
+            // 验证 token 是否有效
+            errorEl.textContent = '正在验证 Token...';
+            GitHubStore.setToken(token);
+
+            try {
+                const { codes } = await GitHubStore.fetchCodes();
+                // Token 有效，保存到 session
+                sessionStorage.setItem('admin_gh_token', token);
+                errorEl.textContent = '';
+                showPanel();
+            } catch (err) {
+                errorEl.textContent = 'Token 验证失败：' + err.message;
+                GitHubStore.clearToken();
             }
         }
 
+        // ============ 退出 ============
         function adminLogout() {
             InviteCodeManager.adminLogout();
+            sessionStorage.removeItem('admin_gh_token');
+            GitHubStore.clearToken();
             document.getElementById('admin-login').style.display = 'flex';
             document.getElementById('admin-panel').style.display = 'none';
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('adminToken').value = '';
         }
 
+        // ============ 显示面板 ============
         function showPanel() {
             document.getElementById('admin-login').style.display = 'none';
             document.getElementById('admin-panel').style.display = 'block';
             refreshData();
         }
 
-        function refreshData() {
-            // 更新统计
-            const stats = InviteCodeManager.getStats();
-            document.getElementById('statTotal').textContent = stats.total;
-            document.getElementById('statUnused').textContent = stats.unused;
-            document.getElementById('statUsed').textContent = stats.used;
-            document.getElementById('statDisabled').textContent = stats.disabled;
-
-            // 更新表格
-            renderTable();
+        // ============ Loading 控制 ============
+        function showLoading(msg) {
+            document.getElementById('loadingMessage').textContent = msg || '加载中...';
+            document.getElementById('adminLoading').style.display = 'flex';
+        }
+        function hideLoading() {
+            document.getElementById('adminLoading').style.display = 'none';
         }
 
+        // ============ 刷新数据 ============
+        async function refreshData() {
+            showLoading('正在从 GitHub 获取最新数据...');
+            try {
+                GitHubStore.clearCache();  // 强制刷新
+                const codes = await InviteCodeManager.getAllCodes();
+                allCodesCache = codes;
+
+                // 更新统计
+                const total = codes.length;
+                const unused = codes.filter(c => c.status === 'unused').length;
+                const used = codes.filter(c => c.status === 'used').length;
+                const disabled = codes.filter(c => c.status === 'disabled').length;
+
+                document.getElementById('statTotal').textContent = total;
+                document.getElementById('statUnused').textContent = unused;
+                document.getElementById('statUsed').textContent = used;
+                document.getElementById('statDisabled').textContent = disabled;
+
+                // 更新表格
+                renderTable();
+                hideLoading();
+            } catch (err) {
+                hideLoading();
+                showToast('获取数据失败: ' + err.message, 'error');
+                console.error('[Admin] refreshData error:', err);
+            }
+        }
+
+        // ============ 渲染表格 ============
         function renderTable() {
-            const codes = InviteCodeManager.getAllCodes();
+            const codes = allCodesCache;
             const filtered = currentFilter === 'all' ? codes : codes.filter(c => c.status === currentFilter);
             const tbody = document.getElementById('codesTableBody');
             const empty = document.getElementById('emptyState');
@@ -178,6 +284,7 @@
                     <td><span class="status-badge ${code.status}">${getStatusText(code.status)}</span></td>
                     <td class="td-time">${formatTime(code.createdAt)}</td>
                     <td class="td-time">${code.usedAt ? formatTime(code.usedAt) : '-'}</td>
+                    <td class="td-device">${code.usedBy ? '<span class="device-tag">' + code.usedBy.substring(0, 12) + '...</span>' : '-'}</td>
                     <td class="td-actions">
                         ${code.status === 'unused' ? `<button class="btn-action disable" onclick="toggleCode('${code.code}', 'disable')">禁用</button>` : ''}
                         ${code.status === 'disabled' ? `<button class="btn-action enable" onclick="toggleCode('${code.code}', 'enable')">启用</button>` : ''}
@@ -188,13 +295,58 @@
             `).join('');
         }
 
-        function generateNewCodes() {
+        // ============ 生成新邀请码 ============
+        async function generateNewCodes() {
             const count = parseInt(document.getElementById('generateCount').value);
-            const newCodes = InviteCodeManager.generateCodes(count);
-            refreshData();
-            showToast(`成功生成 ${count} 个邀请码`);
+            const btn = document.getElementById('btnGenerate');
+            btn.disabled = true;
+            showLoading(`正在生成 ${count} 个邀请码...`);
+
+            try {
+                const newCodes = await InviteCodeManager.generateCodes(count);
+                await refreshData();
+                showToast(`成功生成 ${count} 个邀请码 ✨`);
+            } catch (err) {
+                hideLoading();
+                showToast('生成失败: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+            }
         }
 
+        // ============ 初始化预置邀请码到仓库 ============
+        async function initPresetCodes() {
+            if (!confirm('确定要将预置的 20 个邀请码初始化到仓库吗？\n（如果已存在相同码则不会重复添加）')) return;
+
+            showLoading('正在初始化预置邀请码...');
+            try {
+                await GitHubStore.atomicUpdate((currentCodes) => {
+                    const existingSet = new Set(currentCodes.map(c => c.code));
+                    const toAdd = InviteCodeManager.PRESET_CODES
+                        .filter(code => !existingSet.has(code))
+                        .map(code => ({
+                            code: code,
+                            status: 'unused',
+                            createdAt: new Date().toISOString(),
+                            usedAt: null,
+                            usedBy: null,
+                        }));
+
+                    return {
+                        updatedCodes: [...currentCodes, ...toAdd],
+                        result: toAdd.length
+                    };
+                }, 'Initialize preset invite codes');
+
+                await refreshData();
+                showToast('预置邀请码初始化完成 ✨');
+            } catch (err) {
+                hideLoading();
+                showToast('初始化失败: ' + err.message, 'error');
+            }
+        }
+
+        // ============ 筛选 ============
         function filterCodes(filter, btn) {
             currentFilter = filter;
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -202,29 +354,76 @@
             renderTable();
         }
 
-        function toggleCode(code, action) {
-            if (action === 'disable') {
-                InviteCodeManager.disableCode(code);
-                showToast('已禁用');
-            } else {
-                InviteCodeManager.enableCode(code);
-                showToast('已启用/重置');
+        // ============ 操作邀请码 ============
+        async function toggleCode(code, action) {
+            const actionText = action === 'disable' ? '禁用' : '启用/重置';
+            showLoading(`正在${actionText}...`);
+
+            try {
+                if (action === 'disable') {
+                    await InviteCodeManager.disableCode(code);
+                } else {
+                    await InviteCodeManager.enableCode(code);
+                }
+                await refreshData();
+                showToast(`已${actionText} ✓`);
+            } catch (err) {
+                hideLoading();
+                showToast(`${actionText}失败: ` + err.message, 'error');
             }
-            refreshData();
         }
 
-        function deleteCode(code) {
-            if (confirm('确定删除此邀请码？')) {
-                InviteCodeManager.deleteCode(code);
-                refreshData();
-                showToast('已删除');
+        async function deleteCode(code) {
+            if (!confirm(`确定删除邀请码 ${code} ？\n此操作不可撤销。`)) return;
+
+            showLoading('正在删除...');
+            try {
+                await InviteCodeManager.deleteCode(code);
+                await refreshData();
+                showToast('已删除 ✓');
+            } catch (err) {
+                hideLoading();
+                showToast('删除失败: ' + err.message, 'error');
             }
         }
 
+        // ============ 复制 ============
         function copyCode(code) {
-            navigator.clipboard.writeText(code).then(() => showToast('已复制到剪贴板'));
+            navigator.clipboard.writeText(code).then(() => showToast('已复制到剪贴板 📋'));
         }
 
+        // ============ 导出未使用码 ============
+        function exportCodes() {
+            const unused = allCodesCache.filter(c => c.status === 'unused');
+            if (unused.length === 0) {
+                showToast('没有可导出的未使用邀请码', 'warn');
+                return;
+            }
+            const text = unused.map(c => c.code).join('\n');
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `邀请码_未使用_${new Date().toISOString().slice(0,10)}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast(`已导出 ${unused.length} 个未使用邀请码 📥`);
+        }
+
+        // ============ 复制所有未使用码 ============
+        function copyAllUnused() {
+            const unused = allCodesCache.filter(c => c.status === 'unused');
+            if (unused.length === 0) {
+                showToast('没有未使用的邀请码', 'warn');
+                return;
+            }
+            const text = unused.map(c => c.code).join('\n');
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`已复制 ${unused.length} 个未使用邀请码 📋`);
+            });
+        }
+
+        // ============ 工具函数 ============
         function getStatusText(status) {
             return { unused: '未使用', used: '已使用', disabled: '已禁用' }[status] || status;
         }
@@ -232,20 +431,20 @@
         function formatTime(isoStr) {
             if (!isoStr) return '-';
             const d = new Date(isoStr);
-            return `${d.getMonth()+1}/${d.getDate()} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+            return `${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
         }
 
-        function showToast(msg) {
+        function showToast(msg, type) {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
-            toast.className = 'toast';
+            toast.className = 'toast' + (type ? ' toast-' + type : '');
             toast.textContent = msg;
             container.appendChild(toast);
             requestAnimationFrame(() => toast.classList.add('show'));
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
-            }, 2000);
+            }, 2500);
         }
     </script>
 </body>
