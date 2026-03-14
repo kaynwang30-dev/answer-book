@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>答案之书 · The Book of Answers</title>
+    <meta name="description" content="在犹豫不决的时候，翻开答案之书，找到你内心的答案">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- ============ 第一屏：邀请码验证 ============ -->
+        <section id="page-invite" class="page active">
+            <div class="invite-container">
+                <!-- 高级粒子背景 -->
+                <div class="invite-particles" id="particles"></div>
+                <!-- 光晕装饰 -->
+                <div class="ambient-orb orb-1"></div>
+                <div class="ambient-orb orb-2"></div>
+                <div class="ambient-orb orb-3"></div>
+
+                <div class="invite-content">
+
+
+
+                    <div class="book-icon-wrapper">
+                        <div class="book-icon">
+                            <div class="book-cover">
+                                <span class="book-symbol">✦</span>
+                            </div>
+                            <div class="book-pages"></div>
+                        </div>
+                        <div class="book-glow"></div>
+                        <!-- 光环动画 -->
+                        <div class="book-ring ring-1"></div>
+                        <div class="book-ring ring-2"></div>
+                    </div>
+
+                    <h1 class="invite-title">答案之书</h1>
+                    <p class="invite-subtitle">The Book of Answers</p>
+                    <p class="invite-desc">在人生的迷雾中，这本书将为你照亮方向<br>请输入邀请码，开启你的命运之页</p>
+                    
+                    <!-- 数据统计卡片组 -->
+                    <div class="stats-cards">
+                        <div class="stat-card stat-card-users">
+                            <div class="stat-card-glow"></div>
+                            <div class="stat-card-icon">
+                                <span class="stat-icon-inner">👥</span>
+                                <div class="stat-icon-ring"></div>
+                            </div>
+                            <div class="stat-card-body">
+                                <div class="stat-card-number" id="statUsers">28,462</div>
+                                <div class="stat-card-label">累计参与</div>
+                            </div>
+                            <div class="stat-card-trend trend-up">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17l5-5 5 5"/><path d="M7 11l5-5 5 5"/></svg>
+                                <span class="trend-text">+128</span>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-card-today">
+                            <div class="stat-card-glow"></div>
+                            <div class="stat-card-icon">
+                                <span class="stat-icon-inner">📖</span>
+                                <div class="stat-icon-ring"></div>
+                            </div>
+                            <div class="stat-card-body">
+                                <div class="stat-card-number" id="statToday">1,847</div>
+                                <div class="stat-card-label">今日翻阅</div>
+                            </div>
+                            <div class="stat-card-trend trend-up">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17l5-5 5 5"/><path d="M7 11l5-5 5 5"/></svg>
+                                <span class="trend-text">+23%</span>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-card-rate">
+                            <div class="stat-card-glow"></div>
+                            <div class="stat-card-icon">
+                                <span class="stat-icon-inner">💫</span>
+                                <div class="stat-icon-ring"></div>
+                            </div>
+                            <div class="stat-card-body">
+                                <div class="stat-card-number" id="statAccuracy">94.7<span class="stat-unit">%</span></div>
+                                <div class="stat-card-label">共鸣率</div>
+                            </div>
+                            <div class="stat-card-trend trend-stable">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/></svg>
+                                <span class="trend-text">稳定</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="invite-input-group">
+                        <div class="code-inputs">
+                            <input type="text" class="code-segment" id="code1" maxlength="4" placeholder="····" autocomplete="off">
+                            <span class="code-divider">-</span>
+                            <input type="text" class="code-segment" id="code2" maxlength="4" placeholder="····" autocomplete="off">
+                            <span class="code-divider">-</span>
+                            <input type="text" class="code-segment" id="code3" maxlength="4" placeholder="····" autocomplete="off">
+                        </div>
+                        <p class="invite-error" id="inviteError"></p>
+                        <button class="btn-enter" id="btnEnter" onclick="verifyInviteCode()">
+                            <span>开启答案之书</span>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </button>
+                    </div>
+
+                    <!-- 用户评价横板卡片 -->
+                    <div class="testimonial-section">
+                        <div class="testimonial-header">
+                            <div class="testimonial-header-left">
+                                <span class="testimonial-icon">💬</span>
+                                <span class="testimonial-title">用户心声</span>
+                            </div>
+                            <div class="testimonial-header-right">
+                                <span class="testimonial-live-dot"></span>
+                                <span class="testimonial-badge">实时</span>
+                                <span class="testimonial-total">2,156 条评价</span>
+                            </div>
+                        </div>
+                        <div class="testimonial-track-wrapper">
+                            <div class="testimonial-track" id="testimonialTrack">
+                                <div class="testimonial-hcard active">
+                                    <div class="t-hcard-left">
+                                        <div class="t-avatar-wrapper">
+                                            <span class="t-avatar">🌸</span>
+                                            <span class="t-avatar-status"></span>
+                                        </div>
+                                    </div>
+                                    <div class="t-hcard-body">
+                                        <div class="t-hcard-top">
+                                            <span class="t-username">小鹿</span>
+                                            <span class="t-stars">★★★★★</span>
+                                        </div>
+                                        <p class="t-hcard-text">"犹豫要不要辞职的时候翻到了'机不可失时不再来'，给了我勇气。"</p>
+                                        <div class="t-hcard-footer">
+                                            <span class="t-time">3小时前</span>
+                                            <span class="t-location">📍 杭州</span>
+                                            <span class="t-helpful">👍 128</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="testimonial-hcard">
+                                    <div class="t-hcard-left">
+                                        <div class="t-avatar-wrapper">
+                                            <span class="t-avatar">🦋</span>
+                                            <span class="t-avatar-status"></span>
+                                        </div>
+                                    </div>
+                                    <div class="t-hcard-body">
+                                        <div class="t-hcard-top">
+                                            <span class="t-username">清风</span>
+                                            <span class="t-stars">★★★★★</span>
+                                        </div>
+                                        <p class="t-hcard-text">"真的很神奇，翻到的答案就像有人在对我说话一样温暖。"</p>
+                                        <div class="t-hcard-footer">
+                                            <span class="t-time">5小时前</span>
+                                            <span class="t-location">📍 上海</span>
+                                            <span class="t-helpful">👍 96</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="testimonial-hcard">
+                                    <div class="t-hcard-left">
+                                        <div class="t-avatar-wrapper">
+                                            <span class="t-avatar">🌙</span>
+                                            <span class="t-avatar-status"></span>
+                                        </div>
+                                    </div>
+                                    <div class="t-hcard-body">
+                                        <div class="t-hcard-top">
+                                            <span class="t-username">月亮</span>
+                                            <span class="t-stars">★★★★★</span>
+                                        </div>
+                                        <p class="t-hcard-text">"问了感情的问题，答案是'好好生活，慢慢相遇'，瞬间治愈。"</p>
+                                        <div class="t-hcard-footer">
+                                            <span class="t-time">昨天</span>
+                                            <span class="t-location">📍 成都</span>
+                                            <span class="t-helpful">👍 203</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="testimonial-hcard">
+                                    <div class="t-hcard-left">
+                                        <div class="t-avatar-wrapper">
+                                            <span class="t-avatar">📖</span>
+                                            <span class="t-avatar-status"></span>
+                                        </div>
+                                    </div>
+                                    <div class="t-hcard-body">
+                                        <div class="t-hcard-top">
+                                            <span class="t-username">阿宁</span>
+                                            <span class="t-stars">★★★★☆</span>
+                                        </div>
+                                        <p class="t-hcard-text">"考研备考压力大，答案之书说'温柔的坚持就是胜利'，破防了。"</p>
+                                        <div class="t-hcard-footer">
+                                            <span class="t-time">昨天</span>
+                                            <span class="t-location">📍 北京</span>
+                                            <span class="t-helpful">👍 87</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="testimonial-hcard">
+                                    <div class="t-hcard-left">
+                                        <div class="t-avatar-wrapper">
+                                            <span class="t-avatar">✨</span>
+                                            <span class="t-avatar-status"></span>
+                                        </div>
+                                    </div>
+                                    <div class="t-hcard-body">
+                                        <div class="t-hcard-top">
+                                            <span class="t-username">星河</span>
+                                            <span class="t-stars">★★★★★</span>
+                                        </div>
+                                        <p class="t-hcard-text">"每天睡前翻一页，已经成了我的仪式感，答案总是恰到好处。"</p>
+                                        <div class="t-hcard-footer">
+                                            <span class="t-time">2天前</span>
+                                            <span class="t-location">📍 深圳</span>
+                                            <span class="t-helpful">👍 156</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="testimonial-progress" id="testimonialProgress">
+                            <div class="testimonial-progress-bar" id="testimonialProgressBar"></div>
+                        </div>
+                    </div>
+                    
+                    <p class="invite-hint">没有邀请码？<a href="javascript:void(0)" class="invite-hint-link" id="buyLink" onclick="goToBuyPage()"><strong>去获取</strong></a></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ 第二屏：问题维度选择 ============ -->
+        <section id="page-question" class="page">
+            <!-- 氛围装饰：背景粒子 -->
+            <div class="q-atmosphere">
+                <div class="q-particles" id="qParticles"></div>
+                <div class="q-orb q-orb-1"></div>
+                <div class="q-orb q-orb-2"></div>
+                <div class="q-orb q-orb-3"></div>
+                <!-- 浮动符号装饰 -->
+                <div class="q-float-symbols">
+                    <span class="q-float-sym sym-1">✦</span>
+                    <span class="q-float-sym sym-2">☽</span>
+                    <span class="q-float-sym sym-3">✧</span>
+                    <span class="q-float-sym sym-4">⚝</span>
+                    <span class="q-float-sym sym-5">✦</span>
+                    <span class="q-float-sym sym-6">☆</span>
+                </div>
+            </div>
+
+            <div class="question-container">
+                <header class="q-header">
+                    <button class="btn-back" onclick="goBackSmart()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    </button>
+                    <h2 class="q-header-title">向答案之书提问</h2>
+                    <div style="width:40px"></div>
+                </header>
+
+                <!-- ★ 升级版实时动态信息条 ★ -->
+                <div class="question-live-bar" id="questionLiveBar">
+                    <!-- 滚动消息区域 -->
+                    <div class="live-bar-marquee">
+                        <div class="live-bar-marquee-inner" id="liveBarMarquee">
+                            <div class="marquee-item active">
+                                <span class="marquee-avatar">🌸</span>
+                                <span class="marquee-text">来自上海的用户刚刚翻开了第 87 页</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 右侧实时计数器 -->
+                    <div class="live-bar-right">
+                        <div class="live-bar-counter">
+                            <span class="live-bar-pulse"></span>
+                            <span class="live-counter-num" id="onlineCount">326</span>
+                            <span class="live-counter-label">在线</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ★ 实时热门话题滚动条 ★ -->
+                <div class="hot-topic-bar">
+                    <div class="hot-topic-icon">
+                        <span class="fire-icon">🔥</span>
+                        <span class="hot-topic-label">热门</span>
+                    </div>
+                    <div class="hot-topic-scroll" id="hotTopicScroll">
+                        <div class="hot-topic-item active" id="hotTopicItem">
+                            <span class="hot-topic-text">情感类问题今日最热</span>
+                            <span class="hot-topic-count">2,481 人关注</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 1: 选择维度 -->
+                <div id="step-dimension" class="q-step active">
+                    <div class="step-indicator">
+                        <div class="step-dot active"></div>
+                        <div class="step-line"></div>
+                        <div class="step-dot"></div>
+                        <div class="step-line"></div>
+                        <div class="step-dot"></div>
+                    </div>
+                    <h3 class="q-step-title">你的问题关于哪个方面？</h3>
+                    <p class="q-step-desc">选择一个最贴近你困惑的维度</p>
+                    <div class="dimension-grid" id="dimensionGrid"></div>
+
+                    <!-- ★ 升级版热门问题标签云 ★ -->
+                    <div class="hot-tags-section">
+                        <div class="hot-tags-header">
+                            <span class="hot-tags-fire">🔥</span>
+                            <span class="hot-tags-title">大家都在问</span>
+                            <span class="hot-tags-badge" id="hotTagsBadge">实时</span>
+                        </div>
+                        <div class="hot-tags-cloud" id="hotTagsCloud">
+                            <span class="hot-tag hot-tag-fire" onclick="selectDimension('love')" data-heat="hot">
+                                <span class="hot-tag-icon">💕</span>
+                                <span class="hot-tag-text">暗恋表白</span>
+                                <span class="hot-tag-count">1.2k</span>
+                            </span>
+                            <span class="hot-tag hot-tag-fire" onclick="selectDimension('career')" data-heat="hot">
+                                <span class="hot-tag-icon">💼</span>
+                                <span class="hot-tag-text">跳槽选择</span>
+                                <span class="hot-tag-count">986</span>
+                            </span>
+                            <span class="hot-tag hot-tag-warm" onclick="selectDimension('study')" data-heat="warm">
+                                <span class="hot-tag-icon">📚</span>
+                                <span class="hot-tag-text">考研上岸</span>
+                                <span class="hot-tag-count">874</span>
+                            </span>
+                            <span class="hot-tag hot-tag-warm" onclick="selectDimension('self')" data-heat="warm">
+                                <span class="hot-tag-icon">🌟</span>
+                                <span class="hot-tag-text">人生方向</span>
+                                <span class="hot-tag-count">756</span>
+                            </span>
+                            <span class="hot-tag hot-tag-normal" onclick="selectDimension('love')" data-heat="normal">
+                                <span class="hot-tag-icon">💔</span>
+                                <span class="hot-tag-text">分手复合</span>
+                                <span class="hot-tag-count">643</span>
+                            </span>
+                            <span class="hot-tag hot-tag-normal" onclick="selectDimension('wealth')" data-heat="normal">
+                                <span class="hot-tag-icon">💰</span>
+                                <span class="hot-tag-text">投资决策</span>
+                                <span class="hot-tag-count">521</span>
+                            </span>
+                            <span class="hot-tag hot-tag-cool" onclick="selectDimension('family')" data-heat="cool">
+                                <span class="hot-tag-icon">🏠</span>
+                                <span class="hot-tag-text">家庭关系</span>
+                                <span class="hot-tag-count">412</span>
+                            </span>
+                            <span class="hot-tag hot-tag-cool" onclick="selectDimension('career')" data-heat="cool">
+                                <span class="hot-tag-icon">🚀</span>
+                                <span class="hot-tag-text">创业副业</span>
+                                <span class="hot-tag-count">389</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: 选择子分类 -->
+                <div id="step-subcategory" class="q-step">
+                    <div class="step-indicator">
+                        <div class="step-dot done"></div>
+                        <div class="step-line done"></div>
+                        <div class="step-dot active"></div>
+                        <div class="step-line"></div>
+                        <div class="step-dot"></div>
+                    </div>
+                    <h3 class="q-step-title" id="subTitle">更具体地说…</h3>
+                    <p class="q-step-desc">选择更精确的分类，帮助答案之书给你更有针对性的回答</p>
+                    <div class="subcategory-list" id="subcategoryList"></div>
+                    <button class="btn-step-back" onclick="goToStep('step-dimension')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                        重新选择维度
+                    </button>
+                </div>
+
+                <!-- Step 3: 确认提问 -->
+                <div id="step-confirm" class="q-step">
+                    <div class="step-indicator">
+                        <div class="step-dot done"></div>
+                        <div class="step-line done"></div>
+                        <div class="step-dot done"></div>
+                        <div class="step-line done"></div>
+                        <div class="step-dot active"></div>
+                    </div>
+                    <div class="confirm-card">
+                        <div class="confirm-icon" id="confirmIcon">💕</div>
+                        <div class="confirm-dimension" id="confirmDimension">情感</div>
+                        <div class="confirm-sub" id="confirmSub">暗恋/表白</div>
+                        <div class="confirm-divider"></div>
+                        <p class="confirm-instruction">现在，在心中默念你的问题…<br>集中精神，感受你的内心</p>
+                        <textarea class="confirm-textarea" id="userQuestion" placeholder="（选填）在这里写下你的问题，获得更精准的解读..." maxlength="200"></textarea>
+                        <p class="confirm-char-count"><span id="charCount">0</span>/200</p>
+                    </div>
+
+                    <!-- 仪式感提示（升级版） -->
+                    <div class="ritual-tip">
+                        <div class="ritual-tip-glow"></div>
+                        <div class="ritual-tip-icon">🕯️</div>
+                        <p>深呼吸，放空杂念，让答案之书感应你的心绪</p>
+                        <div class="ritual-tip-sparkles">
+                            <span class="sparkle s1">✧</span>
+                            <span class="sparkle s2">✦</span>
+                            <span class="sparkle s3">✧</span>
+                        </div>
+                    </div>
+
+                    <button class="btn-divine" onclick="startDivination()">
+                        <span class="btn-divine-icon">✦</span>
+                        <span>翻开答案之书</span>
+                        <span class="btn-divine-glow"></span>
+                    </button>
+                    <button class="btn-step-back" onclick="goToStep('step-subcategory')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                        重新选择
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ 第三屏：翻书动画 + Loading ============ -->
+        <section id="page-loading" class="page">
+            <div class="loading-container">
+                <!-- 背景星尘 -->
+                <div class="stardust-bg" id="stardustBg"></div>
+
+                <div class="loading-book">
+                    <div class="loading-book-inner">
+                        <div class="book-3d">
+                            <div class="book-3d-cover front">
+                                <div class="cover-content">
+                                    <span class="cover-symbol">✦</span>
+                                    <span class="cover-text">ANSWERS</span>
+                                </div>
+                            </div>
+                            <div class="book-3d-page page-1"><div class="page-inner-text"></div></div>
+                            <div class="book-3d-page page-2"><div class="page-inner-text"></div></div>
+                            <div class="book-3d-page page-3"><div class="page-inner-text"></div></div>
+                            <div class="book-3d-page page-4"><div class="page-inner-text"></div></div>
+                            <div class="book-3d-page page-5"><div class="page-inner-text"></div></div>
+                            <div class="book-3d-page page-6"><div class="page-inner-text"></div></div>
+                            <div class="book-3d-page page-7"><div class="page-inner-text"></div></div>
+                            <div class="book-3d-cover back"></div>
+                        </div>
+                        <!-- 翻书光粒子 -->
+                        <div class="flip-particles" id="flipParticles"></div>
+                        <!-- 书本阴影 -->
+                        <div class="book-shadow"></div>
+                    </div>
+                </div>
+                <div class="loading-text">
+                    <p class="loading-main" id="loadingText">答案之书正在翻阅…</p>
+                    <p class="loading-sub" id="loadingSubText">命运的齿轮正在转动</p>
+                </div>
+                <div class="loading-progress">
+                    <div class="loading-progress-bar" id="progressBar"></div>
+                    <div class="loading-progress-glow"></div>
+                </div>
+                <!-- 底部氛围文字 -->
+                <p class="loading-atmosphere">「 万物皆有答案，你只需翻开那一页 」</p>
+            </div>
+        </section>
+
+        <!-- ============ 第四屏：答案展示 ============ -->
+        <section id="page-answer" class="page">
+            <div class="answer-container">
+                <div class="answer-book-wrapper">
+                    <div class="answer-book">
+                        <div class="answer-book-spine"></div>
+                        <div class="answer-page-left">
+                            <div class="page-number" id="pageNumLeft">—</div>
+                            <div class="page-ornament top-left">✦</div>
+                            <div class="page-ornament bottom-right">✦</div>
+                        </div>
+                        <div class="answer-page-right">
+                            <div class="page-ornament top-right">✦</div>
+                            <div class="page-number-right" id="pageNumRight"></div>
+                            <div class="answer-content">
+                                <p class="answer-label">— 答案之书 · 第 <span id="answerPageNum">42</span> 页 —</p>
+                                <blockquote class="answer-text" id="answerText">
+                                    顺其自然
+                                </blockquote>
+                                <div class="answer-mood" id="answerMood"></div>
+                            </div>
+                            <div class="page-ornament bottom-left">✦</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="answer-actions">
+                    <button class="btn-interpret" onclick="showInterpretation()">
+                        <span class="btn-interpret-icon">🔮</span>
+                        <span>深度解读这个答案</span>
+                    </button>
+                    <button class="btn-retry" onclick="retryQuestion()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+                        <span>再问一次</span>
+                    </button>
+                    <button class="btn-new-question" onclick="newQuestion()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                        <span>问新的问题</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 深度解读弹窗 -->
+            <div class="interpret-overlay" id="interpretOverlay">
+                <div class="interpret-panel">
+                    <div class="interpret-header">
+                        <h3>🔮 深度解读</h3>
+                        <button class="interpret-close" onclick="closeInterpretation()">✕</button>
+                    </div>
+                    <div class="interpret-body" id="interpretBody">
+                        <div class="interpret-question-info">
+                            <span class="interpret-tag" id="interpretTag">情感 · 暗恋/表白</span>
+                        </div>
+                        <div class="interpret-answer-echo">
+                            <span class="echo-label">答案之书说：</span>
+                            <span class="echo-text" id="echoText">顺其自然</span>
+                        </div>
+                        <div class="interpret-content" id="interpretContent"></div>
+                        <div class="interpret-user-q" id="interpretUserQ" style="display:none">
+                            <span class="uq-label">你的心声：</span>
+                            <span class="uq-text" id="uqText"></span>
+                        </div>
+                        <div class="interpret-extra" id="interpretExtra"></div>
+                    </div>
+                    <div class="interpret-footer">
+                        <button class="btn-share" onclick="saveLongImage()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            保存长图记录
+                        </button>
+                        <button class="btn-close-interpret" onclick="closeInterpretation()">知道了</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 全局 Toast -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="answers.js"></script>
+    <script src="invite-code.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

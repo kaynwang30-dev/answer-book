@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>答案之书 · 管理后台</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <div id="admin-app">
+        <!-- 登录页 -->
+        <div id="admin-login" class="admin-login">
+            <div class="admin-login-card">
+                <div class="admin-logo">✦</div>
+                <h1>答案之书 · 管理后台</h1>
+                <p>请输入管理员密码</p>
+                <div class="admin-input-group">
+                    <input type="password" id="adminPassword" placeholder="管理员密码" onkeydown="if(event.key==='Enter')adminLogin()">
+                    <button onclick="adminLogin()">进入</button>
+                </div>
+                <p class="admin-error" id="adminError"></p>
+            </div>
+        </div>
+
+        <!-- 管理面板 -->
+        <div id="admin-panel" class="admin-panel" style="display:none">
+            <header class="admin-header">
+                <div class="admin-header-left">
+                    <span class="admin-header-icon">✦</span>
+                    <h1>邀请码管理</h1>
+                </div>
+                <div class="admin-header-right">
+                    <a href="index.html" class="admin-link">前往答案之书</a>
+                    <button class="btn-logout" onclick="adminLogout()">退出登录</button>
+                </div>
+            </header>
+
+            <!-- 统计卡片 -->
+            <div class="stats-grid">
+                <div class="stat-card total">
+                    <div class="stat-number" id="statTotal">0</div>
+                    <div class="stat-label">总数</div>
+                </div>
+                <div class="stat-card unused">
+                    <div class="stat-number" id="statUnused">0</div>
+                    <div class="stat-label">未使用</div>
+                </div>
+                <div class="stat-card used">
+                    <div class="stat-number" id="statUsed">0</div>
+                    <div class="stat-label">已使用</div>
+                </div>
+                <div class="stat-card disabled">
+                    <div class="stat-number" id="statDisabled">0</div>
+                    <div class="stat-label">已禁用</div>
+                </div>
+            </div>
+
+            <!-- 操作栏 -->
+            <div class="actions-bar">
+                <div class="actions-left">
+                    <button class="btn-generate" onclick="generateNewCodes()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                        生成邀请码
+                    </button>
+                    <select id="generateCount" class="select-count">
+                        <option value="1">1个</option>
+                        <option value="5">5个</option>
+                        <option value="10">10个</option>
+                        <option value="20">20个</option>
+                    </select>
+                </div>
+                <div class="actions-right">
+                    <div class="filter-group">
+                        <button class="filter-btn active" data-filter="all" onclick="filterCodes('all', this)">全部</button>
+                        <button class="filter-btn" data-filter="unused" onclick="filterCodes('unused', this)">未使用</button>
+                        <button class="filter-btn" data-filter="used" onclick="filterCodes('used', this)">已使用</button>
+                        <button class="filter-btn" data-filter="disabled" onclick="filterCodes('disabled', this)">已禁用</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 邀请码列表 -->
+            <div class="codes-table-wrapper">
+                <table class="codes-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>邀请码</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                            <th>使用时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="codesTableBody">
+                    </tbody>
+                </table>
+                <div class="empty-state" id="emptyState" style="display:none">
+                    <p>暂无邀请码数据</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="invite-code.js"></script>
+    <script>
+        let currentFilter = 'all';
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            InviteCodeManager.init();
+            if (InviteCodeManager.isAdminAuthed()) {
+                showPanel();
+            }
+        });
+
+        function adminLogin() {
+            const pwd = document.getElementById('adminPassword').value;
+            if (InviteCodeManager.verifyAdmin(pwd)) {
+                showPanel();
+            } else {
+                document.getElementById('adminError').textContent = '密码错误';
+                document.getElementById('adminPassword').classList.add('shake');
+                setTimeout(() => document.getElementById('adminPassword').classList.remove('shake'), 500);
+            }
+        }
+
+        function adminLogout() {
+            InviteCodeManager.adminLogout();
+            document.getElementById('admin-login').style.display = 'flex';
+            document.getElementById('admin-panel').style.display = 'none';
+        }
+
+        function showPanel() {
+            document.getElementById('admin-login').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'block';
+            refreshData();
+        }
+
+        function refreshData() {
+            // 更新统计
+            const stats = InviteCodeManager.getStats();
+            document.getElementById('statTotal').textContent = stats.total;
+            document.getElementById('statUnused').textContent = stats.unused;
+            document.getElementById('statUsed').textContent = stats.used;
+            document.getElementById('statDisabled').textContent = stats.disabled;
+
+            // 更新表格
+            renderTable();
+        }
+
+        function renderTable() {
+            const codes = InviteCodeManager.getAllCodes();
+            const filtered = currentFilter === 'all' ? codes : codes.filter(c => c.status === currentFilter);
+            const tbody = document.getElementById('codesTableBody');
+            const empty = document.getElementById('emptyState');
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                empty.style.display = 'block';
+                return;
+            }
+            empty.style.display = 'none';
+
+            tbody.innerHTML = filtered.map((code, i) => `
+                <tr class="code-row ${code.status}">
+                    <td class="td-num">${i + 1}</td>
+                    <td class="td-code">
+                        <span class="code-text">${code.code}</span>
+                        <button class="btn-copy-sm" onclick="copyCode('${code.code}')" title="复制">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        </button>
+                    </td>
+                    <td><span class="status-badge ${code.status}">${getStatusText(code.status)}</span></td>
+                    <td class="td-time">${formatTime(code.createdAt)}</td>
+                    <td class="td-time">${code.usedAt ? formatTime(code.usedAt) : '-'}</td>
+                    <td class="td-actions">
+                        ${code.status === 'unused' ? `<button class="btn-action disable" onclick="toggleCode('${code.code}', 'disable')">禁用</button>` : ''}
+                        ${code.status === 'disabled' ? `<button class="btn-action enable" onclick="toggleCode('${code.code}', 'enable')">启用</button>` : ''}
+                        ${code.status === 'used' ? `<button class="btn-action reset" onclick="toggleCode('${code.code}', 'enable')">重置</button>` : ''}
+                        <button class="btn-action delete" onclick="deleteCode('${code.code}')">删除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function generateNewCodes() {
+            const count = parseInt(document.getElementById('generateCount').value);
+            const newCodes = InviteCodeManager.generateCodes(count);
+            refreshData();
+            showToast(`成功生成 ${count} 个邀请码`);
+        }
+
+        function filterCodes(filter, btn) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderTable();
+        }
+
+        function toggleCode(code, action) {
+            if (action === 'disable') {
+                InviteCodeManager.disableCode(code);
+                showToast('已禁用');
+            } else {
+                InviteCodeManager.enableCode(code);
+                showToast('已启用/重置');
+            }
+            refreshData();
+        }
+
+        function deleteCode(code) {
+            if (confirm('确定删除此邀请码？')) {
+                InviteCodeManager.deleteCode(code);
+                refreshData();
+                showToast('已删除');
+            }
+        }
+
+        function copyCode(code) {
+            navigator.clipboard.writeText(code).then(() => showToast('已复制到剪贴板'));
+        }
+
+        function getStatusText(status) {
+            return { unused: '未使用', used: '已使用', disabled: '已禁用' }[status] || status;
+        }
+
+        function formatTime(isoStr) {
+            if (!isoStr) return '-';
+            const d = new Date(isoStr);
+            return `${d.getMonth()+1}/${d.getDate()} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+        }
+
+        function showToast(msg) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = msg;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
