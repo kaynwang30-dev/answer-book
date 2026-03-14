@@ -65,10 +65,11 @@ const InviteCodeManager = {
             }
 
             // 标记为已使用 — 需要写入 GitHub
-            // 这里需要管理员 token，但为了用户体验，我们使用一个专用的写入 token
-            // 如果没有 token，先尝试用预置的写入 token
-            if (!GitHubStore.CONFIG.token) {
-                GitHubStore.setToken(this._getWriteToken());
+            // 始终使用内嵌的写入 token（确保不会用到旧的失效 token）
+            const writeToken = this._getWriteToken();
+            console.log('[InviteCode] Write token available:', !!writeToken, 'length:', writeToken.length);
+            if (writeToken) {
+                GitHubStore.setToken(writeToken);
             }
 
             try {
@@ -96,6 +97,8 @@ const InviteCodeManager = {
                     };
                 }, `Use invite code: ${inputCode.substring(0, 4)}****`);
 
+                console.log('[InviteCode] Write result:', result);
+
                 if (result.valid) {
                     this._saveDeviceVerified(result.code);
                 }
@@ -107,7 +110,7 @@ const InviteCodeManager = {
 
                 return result;
             } catch (writeErr) {
-                console.error('[InviteCode] Write error:', writeErr);
+                console.error('[InviteCode] Write error:', writeErr.message);
                 // 写入失败，但邀请码确实是有效的未使用状态
                 // 降级：本地标记验证通过，但邀请码状态未能在云端更新
                 this._saveDeviceVerified(target.code);
