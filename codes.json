@@ -1,5 +1,13 @@
 {
-  "codes": [],
+  "codes": [
+    {
+      "code": "D8EZ-QCZ3-BHJ4",
+      "status": "unused",
+      "createdAt": "2026-03-14T22:44:08.087Z",
+      "usedAt": null,
+      "usedBy": null
+    }
+  ],
   "version": 1,
-  "lastUpdated": ""
+  "lastUpdated": "2026-03-14T22:44:09.185Z"
 }
